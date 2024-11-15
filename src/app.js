@@ -1,22 +1,20 @@
 const express = require("express");
-
+const {auth} = require("./middleware");
+const {unauthorization} = require("./middleware");
 const app = express();
 
-  
-app.use("/", (req, res )=>{
-  res.send("hahhhhh ");
- })
 
-app.use("/halo" , (req,res) => {
-  res.send( " hello world ");
-})
+app.use("/admin", auth);
 
-app.use("/hai",  (req, res) => {
-  res.send(" hahaha");
-  })
+app.use("/admin/getdata",  (req, res)=>{
+   console.log("hahhaha");
+  res.send("authorization succeffullyy");
+});
 
 
+app.use("/user", unauthorization, (req, res)=>{
+  console.log("hahhaha");
+ res.send("authorization succeffullyy");
+});
 
-
-
-app.listen(3000);
+app.listen(3000);  
