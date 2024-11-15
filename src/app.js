@@ -1,6 +1,6 @@
 const express = require("express");
-const {auth} = require("./middleware");
-const {unauthorization} = require("./middleware");
+const {auth} = require("./middleware/userAuth");
+const {unauthorization} = require("./middleware/userAuth");
 const app = express();
 
 
