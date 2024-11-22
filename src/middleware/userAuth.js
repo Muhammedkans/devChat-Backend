@@ -1,30 +1,39 @@
-const auth =  (req,res,next)=> {
- console.log("------------------------");
-const token = "xyz";
- console.log("hai");
-  if(!token ){
-    res.status(500).send(" unKnown auth ");
-  }
-  else{
-next();
+const jwt = require("jsonwebtoken");
+const express = require("express");
+const User = require("../models/user");
+const userAuth = async  (req,res,next)=> {
+   try{
+    const {token} = req.cookies;
 
-  }
-}
-const unauthorization =  (req,res,next)=> {
-  console.log("------------------------");
-  const token = "xyz";
- console.log("hai");
-  if(!token ){
-    res.status(500).send(" unKnown auth ");
-  }
-  else{
-next();
+    if(!token){
+    
+      throw new Error(" please login");
+    }
+    const decordedValue = await jwt.verify(token,"Dev@chat$790");
 
-  }
+    if(!decordedValue){
+      throw new Error("please login token not found ")
+    }
+
+    const {_id} =  decordedValue;
+
+    const user = await User.findById(_id);
+
+    if(!user){
+      throw new Error("user not found");
+    }
+
+    req.user = user; 
+    next();
+   }catch(err){
+    res.status(400).send("invalid credentials")
+   }
+
+
 }
+
 
 module.exports = {
-  auth,
-  unauthorization,
+  userAuth,
 }
 
