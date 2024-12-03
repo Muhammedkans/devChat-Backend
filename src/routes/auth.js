@@ -10,6 +10,7 @@ const User = require("../models/user");
 
 
 
+
 authRouter.post("/signup", async (req, res)=>{
  
   validationSignUp(req);
@@ -59,7 +60,7 @@ authRouter.post("/signup", async (req, res)=>{
     console.log(token);  
 
     res.cookie("token",token,{expires:new Date(Date.now()+ 8*3600000),});
-    res.send("Login succefull");
+    res.send(user);
    }
    else{
     res.status(400).send("invalid credetial");
@@ -72,6 +73,11 @@ authRouter.post("/signup", async (req, res)=>{
   
  
 
+})
+
+authRouter.post("/logout",(req, res)=>{
+ res.cookie("token",null,{expires:new Date(Date.now()),});
+ res.send("succefully logout");
 })
 
 
