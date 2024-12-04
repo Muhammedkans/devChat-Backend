@@ -8,7 +8,7 @@ const userAuth = async  (req,res,next)=> {
 
     if(!token){
     
-      throw new Error(" please login");
+    return res.status(401).send("please login");
     }
     const decordedValue = await jwt.verify(token,"Dev@chat$790");
 
