@@ -78,7 +78,7 @@ userRouter.get("/user/feed",userAuth, async (req, res)=>{
    $and:[ {_id :{$nin : Array.from(hideUserFromFeed)}} , {_id:{ $ne : loggedInUser._id}},],
    }).select(USER_SAFE_DATA).skip(skip).limit(limit);
 
-    res.json({users})
+    res.json({data:users});
   }catch(err){
     res.status(400).send(" something went wrong" + err);
   }

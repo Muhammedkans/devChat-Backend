@@ -24,7 +24,7 @@ profileRouter.get("/profile/view", userAuth , async (req,res)=>{
     try{
 
       if (!validateEditProfile(req)){
-        throw new Error("failed update  ");
+        throw new Error("failed update");
       }
 
       const loggedUser= req.user;
@@ -38,6 +38,7 @@ profileRouter.get("/profile/view", userAuth , async (req,res)=>{
 
     }catch(err){
       res.status(404).send("update failed");
+      console.log(err.message);
     }
   })
 
