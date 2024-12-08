@@ -43,9 +43,9 @@ userRouter.get("/user/connection",userAuth,async  (req, res)=>{
     return row.fromUserId;
    })
    res.json({message: " my connections"
-    ,data:data})
+    ,data:data});
   }catch(err){
-    res.status(400).send("something went wrong");
+    res.status(400).send("something went wrong"+err);
   }
  
 })
