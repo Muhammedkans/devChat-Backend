@@ -10,10 +10,10 @@ const userAuth = async  (req,res,next)=> {
     
     return res.status(401).send("please login");
     }
-    const decordedValue = await jwt.verify(token,"Dev@chat$790");
+    const decordedValue = await jwt.verify(token,process.env.JWT_TOKEN);
 
     if(!decordedValue){
-      throw new Error("please login token not found ")
+      throw new Error("please login token not found ");
     }
 
     const {_id} =  decordedValue;
