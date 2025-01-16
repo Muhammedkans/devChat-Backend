@@ -1,13 +1,15 @@
 const express = require("express");
 const app = express();
+
 const connectDB = require("./config/database")
 const cookieParser = require("cookie-parser");
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/userRouter");
+require("dotenv").config();
 const cors = require("cors");
-require("dotenv").config;
+
 app.use(cors({
   origin:"http://localhost:5173",credentials:true,
 })); 
@@ -22,10 +24,11 @@ app.use("/",userRouter);
 
 connectDB().then(()=>{
   console.log("database connection succefull");
-  app.listen(PORT, ()=>{
+  app.listen(process.env.PORT, ()=>{
     console.log( "server is listening port 3000");
   }); 
 }).catch(err => {
-  console.log("databae connection error",err);
+  
+  console.log("databae connection error",err.message);
 })
 
