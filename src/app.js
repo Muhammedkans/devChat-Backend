@@ -8,7 +8,7 @@ const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/userRouter");
 require("dotenv").config();
-const cors = require("cors");
+const cors = require("cors"); 
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? ['https://mkans-devchat.vercel.app/']  // Production frontend URL
@@ -28,7 +28,7 @@ app.use("/",userRouter);
 
 connectDB().then(()=>{
   console.log("database connection succefull");
-  app.listen(process.env.PORT, ()=>{
+  app.listen(process.env.PORT||7777, ()=>{
     console.log( "server is listening port 3000");
   }); 
 }).catch(err => {
