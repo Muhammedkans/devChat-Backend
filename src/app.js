@@ -10,7 +10,6 @@ const userRouter = require("./routes/userRouter");
 require("dotenv").config();
 const cors = require("cors"); 
 
-
   
 app.use(cors({
   origin:"*",credentials:true,
