@@ -10,10 +10,10 @@ const userRouter = require("./routes/userRouter");
 require("dotenv").config();
 const cors = require("cors"); 
 
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? ['https://mkans-devchat.vercel.app/']  // Production frontend URL
-  : ['http://localhost:5173'];
-
+const allowedOrigins = process.env.NODE_ENV === 'development'
+  ? ['http://localhost:5173'] // Production frontend URL
+  : ['https://mkans-devchat.vercel.app/'] 
+  
 app.use(cors({
   origin:allowedOrigins,credentials:true,
 })); 
