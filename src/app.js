@@ -12,7 +12,7 @@ const cors = require("cors");
 
 const allowedOrigins = process.env.NODE_ENV === 'development'
   ? ['http://localhost:5173'] // Production frontend URL
-  : ['https://mkans-devchat.vercel.app'] 
+  : ['https://mkans-devchat.vercel.app/'] 
   
 app.use(cors({
   origin:allowedOrigins,credentials:true,
