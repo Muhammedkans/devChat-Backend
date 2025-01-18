@@ -12,8 +12,10 @@ const cors = require("cors");
 
   
 app.use(cors({
-  origin:"*",credentials:true,
+  origin:"https://mkans-devchat.vercel.app/",credentials:true,
 })); 
+
+
 app.use(express.json());
 app.use(cookieParser());
 
