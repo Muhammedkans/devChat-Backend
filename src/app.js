@@ -12,7 +12,7 @@ const cors = require("cors");
 
   
 app.use(cors({
-  origin:"https://mkans-devchat.vercel.app",credentials:true,
+  origin:"https://mkans-dev-chat-web.vercel.app",credentials:true,
 })); 
 
 
