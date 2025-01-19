@@ -8,7 +8,7 @@ const bcrypt = require("bcrypt");
 
 const User = require("../models/user");
 
-
+require("dotenv").config();
 
 
 authRouter.post("/signup", async (req, res)=>{
@@ -34,8 +34,15 @@ authRouter.post("/signup", async (req, res)=>{
    const saveUser = await user.save()
    const token = await saveUser.getJWT();  
  
-   res.cookie("token",token,{expires:new Date(Date.now()+ 8*3600000),});
+  
    
+   res.cookie("token", token, {
+    httpOnly: true, // Secures the cookie (not accessible by JavaScript)
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production (HTTPS required)
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Cross-origin in production, lax in localhost
+    expires: new Date(Date.now() + 8 * 3600000), // Expire in 8 hours
+  });
+  
    res.json({message:" User added succefully", data:saveUser}); 
 
  }catch(err){
