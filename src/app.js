@@ -13,7 +13,7 @@ const cors = require("cors");
   
 app.use(cors({
   origin:"https://mkans-dev-chat-web.vercel.app",credentials:true,
-})); 
+}));   
 
 
 app.use(express.json());
