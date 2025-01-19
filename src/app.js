@@ -12,7 +12,10 @@ const cors = require("cors");
 
   
 app.use(cors({
-  origin:"https://mkans-dev-chat-web.vercel.app",credentials:true,
+  origin:[
+    "http://localhost:5173", // Local development
+    "https://mkans-dev-chat-web.vercel.app", // Production
+  ],  credentials:true,
 }));   
 
 
