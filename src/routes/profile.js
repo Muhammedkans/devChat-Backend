@@ -38,7 +38,7 @@ profileRouter.get("/profile/view", userAuth , async (req,res)=>{
 
     }catch(err){
       res.status(404).send( "update failed " +err);
-      console.log(err);
+      
     }
   })
 

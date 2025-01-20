@@ -54,7 +54,7 @@ requestRouter.post("/request/send/:status/:toUserId",userAuth, async (req ,res)=
    });
 
   }catch(err){
-    console.log(err.message)
+    
  res.status(400).send("error happeing"+err.message);
   }
  
@@ -92,7 +92,7 @@ requestRouter.post("/request/review/:status/:requestId",userAuth, async(req,res)
     const data  = await connectionRequest.save();
     res.json({message: "connection request " + status, data})
   }catch(err){
-    console.log(err)
+    
     res.status(404).send("something went wrong"+err.message);
   }
 })

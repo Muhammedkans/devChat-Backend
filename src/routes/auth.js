@@ -28,7 +28,7 @@ authRouter.post("/signup", async (req, res)=>{
    gender,
    about,
   });
-  console.log(user);
+  
  
   try{
    const saveUser = await user.save()
@@ -46,7 +46,7 @@ authRouter.post("/signup", async (req, res)=>{
    res.json({message:" User added succefully", data:saveUser}); 
 
  }catch(err){
-   console.log(err);
+  
    res.status(400).send(err +"failed to add to database");
  }
  
@@ -72,7 +72,7 @@ authRouter.post("/signup", async (req, res)=>{
      
     const token = await user.getJWT();
     console.log(token); 
-     
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: true, // Render uses HTTPS
@@ -86,7 +86,7 @@ authRouter.post("/signup", async (req, res)=>{
    }
   }
   catch(err){
-    console.log(err)
+    
     res.status(400).send("invalid credetial");
   }
   
