@@ -37,9 +37,9 @@ authRouter.post("/signup", async (req, res)=>{
   
    
    res.cookie("token", token, {
-    httpOnly: true, // Secures the cookie (not accessible by JavaScript)
-    secure: process.env.NODE_ENV === "production", // Use secure cookies in production (HTTPS required)
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Cross-origin in production, lax in localhost
+    httpOnly: true,
+    secure: true, // Render uses HTTPS
+    sameSite: 'none', // Required for cross-origin cookies
     expires: new Date(Date.now() + 8 * 3600000), // Expire in 8 hours
   });
   
@@ -71,10 +71,14 @@ authRouter.post("/signup", async (req, res)=>{
    if(isPassword){
      
     const token = await user.getJWT();
-
-    console.log(token);  
-
-    res.cookie("token",token,{expires:new Date(Date.now()+ 8*3600000),});
+    console.log(token); 
+     
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true, // Render uses HTTPS
+      sameSite: 'none', // Required for cross-origin cookies
+      expires: new Date(Date.now() + 8 * 3600000), // Expire in 8 hours
+    });
     res.send(user);
    }
    else{
