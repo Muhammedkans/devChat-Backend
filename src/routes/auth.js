@@ -71,7 +71,7 @@ authRouter.post("/signup", async (req, res)=>{
    if(isPassword){
      
     const token = await user.getJWT();
-    console.log(token); 
+    
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -90,8 +90,6 @@ authRouter.post("/signup", async (req, res)=>{
     res.status(400).send("invalid credetial");
   }
   
- 
-
 })
 
 authRouter.post("/logout",(req, res)=>{

@@ -29,7 +29,7 @@ const userAuth = async  (req,res,next)=> {
    
     next();
    }catch(err){
-    res.status(400).send("invalid credentials")
+    res.status(400).send("invalid credentials");
    }
 
 

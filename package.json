@@ -2,9 +2,9 @@
   "name": "devchat",
   "version": "1.0.0",
   "description": "creating devchat for developers",
-  "main": "src/app.js", 
+  "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js", 
+    "start": "node src/app.js",
     "dev": "nodemon src/app.js"
   },
   "keywords": [
@@ -18,12 +18,15 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cookie": "^1.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.1",
+    "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.1",
+    "socket.io": "^4.8.1",
     "validator": "^13.12.0"
   },
   "devDependencies": {
