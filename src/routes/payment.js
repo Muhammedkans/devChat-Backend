@@ -28,7 +28,7 @@ const User = require("../models/user");
       }
     })
 
-    console.log(order);
+   
 
 
 
@@ -48,7 +48,7 @@ const User = require("../models/user");
 
     res.json({...savedPayment.toJSON() , keyId:process.env.RAZORPAY_KEY_ID});
   }catch(err){
-console.log(err);
+
 res.status(404).send("error happening")
   }
 
@@ -78,7 +78,7 @@ await user.save();
 res.status(200).json({msg: "webhook recieved succefully"});
 
   }catch(err){
-    console.error(err.message);
+   
  return  res.status(500).json({msg: err.message});
 
   }
