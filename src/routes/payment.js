@@ -74,8 +74,13 @@ const user = await User.findOne({_id:payment.userId})
 user.isPremium = true;
 user.membershipType = payment.notes.memberShipType;
 await user.save();
+
+res.status(200).json({msg: "webhook recieved succefully"});
+
   }catch(err){
- return  res.status(500).json({msg: err});
+    console.error(err.message);
+ return  res.status(500).json({msg: err.message});
+
   }
  
 
