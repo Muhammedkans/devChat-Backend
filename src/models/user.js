@@ -65,6 +65,10 @@ membershipType:{
      }
     },
   },
+
+  
+  cloudinaryId: { type: String, default: "" }, 
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], 
   about:{
     type:String,
     default:"this is default about ",
