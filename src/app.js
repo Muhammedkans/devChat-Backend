@@ -3,21 +3,30 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
   
-
+const fileUpload = require("express-fileupload");
 const connectDB = require("./config/database")
 const cookieParser = require("cookie-parser");
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/userRouter");
-app.use(express.json());
+
+
+
+ 
 app.use(cookieParser());
 const cors = require("cors"); 
 const http = require("http");
 const initializeSocket  = require("../src/utils/socket");
 const chatRouter = require("./routes/chat");
 const paymentRouter = require("./routes/payment");
+const postRouter = require("./routes/post");
 
+
+
+
+
+app.use(express.json());
 app.use(cors({
   origin:[
     "http://localhost:5173", // Local development
@@ -25,17 +34,18 @@ app.use(cors({
   ],  credentials:true,
 }));   
 
-
-
-
-
-
 app.use("/",authRouter);
 app.use("/",profileRouter);
 app.use("/",requestRouter);
 app.use("/",userRouter);
 app.use("/",chatRouter);
 app.use("/",paymentRouter);
+app.use("/",postRouter);
+
+app.use(fileUpload({
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+}));
+
 const server = http.createServer(app);
 
 initializeSocket(server) 
@@ -48,5 +58,5 @@ connectDB().then(()=>{
 }).catch(err => {
   
   console.log("databae connection error",err.message);
-})
+});
 

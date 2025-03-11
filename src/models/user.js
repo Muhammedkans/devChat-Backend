@@ -68,7 +68,9 @@ membershipType:{
 
   
   cloudinaryId: { type: String, default: "" }, 
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], 
+  postsCount: { type: Number, default: 0 }, // Total number of posts
+  followersCount: { type: Number, default: 0 }, // Total number of followers
+  likesCount: { type: Number, default: 0 },
   about:{
     type:String,
     default:"this is default about ",

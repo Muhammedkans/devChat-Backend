@@ -7,6 +7,7 @@ const User = require("../models/user");
 const profileRouter = express.Router();
 const cloudinary = require("../utils/cloudinary")
 const fileUpload = require('express-fileupload');
+const Post = require("../models/post")
 profileRouter.use(fileUpload({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 }));
@@ -54,20 +55,20 @@ profileRouter.post('/upload-photo', userAuth, async (req, res) => {
 
 
 
+profileRouter.get('/posts/allpost', userAuth, async (req, res) => {
+  try {
+    const userId = req.user._id; // Get the authenticated user's ID
 
-profileRouter.get("/profile/view", userAuth , async (req,res)=>{
-  
-  try{
-  
-    const user = req.user;
-  
-    
-    res.send(user);
+    // Fetch all posts by the user
+    const posts = await Post.find({ user: userId }).sort({ createdAt: -1 }); // Sort by latest first
+
+    res.status(200).json({ message: 'Posts fetched successfully', data: posts });
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    res.status(500).json({ message: 'Something went wrong', error: error.message });
   }
-  catch(error){
-    res.status(400).send("something went wrong ");
-  }
-  });
+});
+
 
   profileRouter.patch('/profile/edit', userAuth, async (req, res) => {
     try {
@@ -92,6 +93,26 @@ profileRouter.get("/profile/view", userAuth , async (req,res)=>{
     } catch (error) {
       console.error('Error updating profile:', error); // Log the error for debugging
       res.status(500).json({ message: 'Profile update failed', error: error.message });
+    }
+  });
+
+
+
+  profileRouter.get('/users/:userId/posts', userAuth, async (req, res) => {
+    try {
+      const userId = req.params.userId;
+  
+      // Fetch all posts by the user
+      const posts = await Post.find({ user: userId }).sort({ createdAt: -1 }); // Sort by latest first
+  
+   if(!posts){
+    return res.status(400).json({message: 'no posts found'});
+   }
+
+      res.status(200).json({ message: 'Posts fetched successfully', data: posts });
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      res.status(500).json({ message: 'Something went wrong', error: error.message });
     }
   });
 
