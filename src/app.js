@@ -11,8 +11,6 @@ const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/userRouter");
 
-
-
  
 app.use(cookieParser());
 const cors = require("cors"); 
@@ -21,7 +19,8 @@ const initializeSocket  = require("../src/utils/socket");
 const chatRouter = require("./routes/chat");
 const paymentRouter = require("./routes/payment");
 const postRouter = require("./routes/post");
-
+const followRouter = require("./routes/follow");
+const postFeed = require("./routes/postfeed");
 
 
 
@@ -41,7 +40,8 @@ app.use("/",userRouter);
 app.use("/",chatRouter);
 app.use("/",paymentRouter);
 app.use("/",postRouter);
-
+app.use("/",followRouter);
+app.use("/",postFeed);
 app.use(fileUpload({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 }));

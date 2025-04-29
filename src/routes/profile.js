@@ -54,22 +54,6 @@ profileRouter.post('/upload-photo', userAuth, async (req, res) => {
 
 
 
-
-profileRouter.get('/posts/allpost', userAuth, async (req, res) => {
-  try {
-    const userId = req.user._id; // Get the authenticated user's ID
-
-    // Fetch all posts by the user
-    const posts = await Post.find({ user: userId }).sort({ createdAt: -1 }); // Sort by latest first
-
-    res.status(200).json({ message: 'Posts fetched successfully', data: posts });
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-    res.status(500).json({ message: 'Something went wrong', error: error.message });
-  }
-});
-
-
   profileRouter.patch('/profile/edit', userAuth, async (req, res) => {
     try {
       const loggedUser = req.user;
@@ -98,24 +82,58 @@ profileRouter.get('/posts/allpost', userAuth, async (req, res) => {
 
 
 
+
   profileRouter.get('/users/:userId/posts', userAuth, async (req, res) => {
     try {
       const userId = req.params.userId;
   
-      // Fetch all posts by the user
-      const posts = await Post.find({ user: userId }).sort({ createdAt: -1 }); // Sort by latest first
+      // Simple validation: Check if userId is a valid MongoDB ObjectId
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
   
-   if(!posts){
-    return res.status(400).json({message: 'no posts found'});
-   }
-
+      // Fetch all posts by the user, sorted by latest first
+      const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
+  
+      // Check if posts exist
+      if (!posts || posts.length === 0) {
+        return res.status(404).json({ message: 'No posts found for this user' });
+      }
+  
+      // Send success response
       res.status(200).json({ message: 'Posts fetched successfully', data: posts });
     } catch (error) {
       console.error('Error fetching posts:', error);
+  
+      // Handle specific errors
+      if (error.name === 'CastError') {
+        return res.status(400).json({ message: 'Invalid data format' });
+      }
+  
+      // Generic error response
       res.status(500).json({ message: 'Something went wrong', error: error.message });
     }
   });
 
+
+  // Get user profile data (for logged-in user)
+profileRouter.get('/profile/view', userAuth, async (req, res) => {
+  try {
+    const userId = req.user.id; // Use the authenticated user's ID
+
+    // Find the user and exclude password and email
+    const user = await User.findById(userId).select('-password -email');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Send response
+    res.status(200).json({ message: 'Profile fetched successfully', data: user });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+});
 
 
   module.exports = profileRouter;

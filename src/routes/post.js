@@ -124,6 +124,59 @@ postRouter.post('/posts/:postId/like', userAuth, async (req, res) => {
 
 
 
+
+
+postRouter.delete('/posts/:postId/like', userAuth, async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const userId = req.user.id; // Authenticated user's ID
+
+    // Simple validation: Check if postId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ message: 'Invalid post ID' });
+    }
+
+    // Step 1: Check if the user has liked the post
+    const existingLike = await Like.findOne({ user: userId, post: postId });
+    if (!existingLike) {
+      return res.status(400).json({ message: 'You have not liked this post' });
+    }
+
+    // Step 2: Remove the Like record
+    await Like.deleteOne({ _id: existingLike._id });
+
+    // Step 3: Update the Post's likes array
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    post.likes = post.likes.filter((id) => id.toString() !== userId); // Remove user from likes array
+    await post.save();
+
+    // Step 4: Decrement the User's likesCount
+    const postUser = await User.findById(post.user); // User who created the post
+    if (!postUser) {
+      return res.status(404).json({ message: 'Post creator not found' });
+    }
+    postUser.likesCount -= 1; // Decrement likesCount
+    await postUser.save();
+
+    // Step 5: Send success response
+    res.status(200).json({ message: 'Post unliked successfully' });
+  } catch (error) {
+    console.error('Error unliking post:', error);
+
+    // Handle specific errors
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid data format' });
+    }
+
+    // Generic error response
+    res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+});
+
+
 module.exports = postRouter;
 
 
