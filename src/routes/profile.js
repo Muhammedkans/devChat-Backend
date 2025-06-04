@@ -14,36 +14,42 @@ profileRouter.use(fileUpload({
 
 profileRouter.post('/upload-photo', userAuth, async (req, res) => {
   try {
-    console.log('Request Files:', req.files); // Debugging
+    console.log('Request Files:', req.files.photo); // Debugging
 
     // Check if file is uploaded
     if (!req.files || !req.files.photo) {
+      console.log("no files",req.files.photo)
       return res.status(400).json({ message: 'No file uploaded or file key is incorrect' });
     }
 
     const user = req.user;
     const file = req.files?.photo;
-
+console.log("Uploading to Cloudinary...");
     const result = await cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.data.toString('base64')}`, {
       folder: 'profile-photos',
     });
 
-
+console.log("Cloudinary Upload Result:", result);
     const maxFileSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxFileSize) {
       return res.status(400).json({ message: 'File size exceeds the limit of 5MB.' });
+    }
+console.log("yes currect size")
+       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return res.status(400).json({ message: 'Only JPEG, PNG, or WEBP images are allowed.' });
     }
 
     // Delete old photo from Cloudinary if it exists
     if (user.cloudinaryId) {
       await cloudinary.uploader.destroy(user.cloudinaryId);
     }
-
+console.log("delete uerser")
     // Update user's profile photo and Cloudinary ID in the database
     user.photoUrl = result.secure_url;
     user.cloudinaryId = result.public_id;
     await user.save();
-
+console.log("hahha")
     res.status(200).json({ message: 'Profile photo updated successfully', data: user });
   } catch (error) {
     console.error('Error uploading photo:', error);
@@ -75,6 +81,7 @@ profileRouter.post('/upload-photo', userAuth, async (req, res) => {
         data: loggedUser,
       });
     } catch (error) {
+      console.log(error);
       console.error('Error updating profile:', error); // Log the error for debugging
       res.status(500).json({ message: 'Profile update failed', error: error.message });
     }

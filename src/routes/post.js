@@ -176,6 +176,18 @@ postRouter.delete('/posts/:postId/like', userAuth, async (req, res) => {
   }
 });
 
+postRouter.get("/posts/all",userAuth,async (req, res)=>{
+try {
+   const userId = req.user._id;
+
+    const posts = await Post.find({ user: userId }).populate("user", "firstName lastName photoUrl");
+
+    res.status(200).json({ success: true, posts });
+  } catch (error) {
+    console.error("Error fetching user posts:", error.message);
+    res.status(500).json({ success: false, message: "Something went wrong" });
+  }
+})
 
 module.exports = postRouter;
 

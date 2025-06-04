@@ -57,6 +57,6 @@ connectDB().then(()=>{
   }); 
 }).catch(err => {
   
-  console.log("databae connection error",err.message);
+  console.log("databae connection error",err);
 });
 
