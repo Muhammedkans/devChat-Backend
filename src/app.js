@@ -21,6 +21,7 @@ const paymentRouter = require("./routes/payment");
 const postRouter = require("./routes/post");
 const followRouter = require("./routes/follow");
 const postFeed = require("./routes/postfeed");
+const commentRouter = require("./routes/commentRoutes")
 
 
 
@@ -42,6 +43,7 @@ app.use("/",paymentRouter);
 app.use("/",postRouter);
 app.use("/",followRouter);
 app.use("/",postFeed);
+app.use("/",commentRouter);
 app.use(fileUpload({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 }));
