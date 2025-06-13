@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const { userAuth } = require("../middleware/userAuth");
 const { validateEditProfile } = require("../utils/validation");
 validateEditProfile;
