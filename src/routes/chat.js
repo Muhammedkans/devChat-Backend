@@ -1,9 +1,9 @@
-
 const express = require("express");
 const { userAuth } = require("../middleware/userAuth");
 const { Chat } = require("../models/chat");
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 const chatRouter = express.Router();
+
 chatRouter.get("/chat/:targetUserId", userAuth, async (req, res) => {
   const { targetUserId } = req.params;
   const userId = req.user._id;
@@ -17,7 +17,7 @@ chatRouter.get("/chat/:targetUserId", userAuth, async (req, res) => {
       participants: { $all: [userId, targetUserId] },
     }).populate({
       path: "messages.senderId",
-      select: "firstName lastName",
+      select: "firstName lastName photoUrl", // ✅ added photoUrl here
     });
 
     if (!chat) {
@@ -35,6 +35,6 @@ chatRouter.get("/chat/:targetUserId", userAuth, async (req, res) => {
   }
 });
 
-
 module.exports = chatRouter;
+
 

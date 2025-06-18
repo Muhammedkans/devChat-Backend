@@ -2,6 +2,7 @@ const socketIO = require("socket.io");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { Chat } = require("../models/chat");
+const User = require("../models/user"); // ✅ Add this to fetch user info
 
 const getSecretRoomId = (userId1, userId2) => {
   return crypto
@@ -13,17 +14,13 @@ const getSecretRoomId = (userId1, userId2) => {
 const initializeSocket = (server) => {
   const io = socketIO(server, {
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "https://mkans-dev-chat-web.vercel.app"
-      ],
+      origin: ["http://localhost:5173", "https://mkans-dev-chat-web.vercel.app"],
       credentials: true,
     },
   });
 
   const onlineUsers = new Set();
 
-  // ✅ Socket Middleware - Auth
   io.use((socket, next) => {
     try {
       const cookie = socket.handshake.headers.cookie;
@@ -43,23 +40,20 @@ const initializeSocket = (server) => {
     }
   });
 
-  // ✅ On Socket Connection
   io.on("connection", (socket) => {
     const userId = socket.user._id;
     console.log("✅ Socket connected:", userId);
 
     onlineUsers.add(userId);
     io.emit("updateOnlineUsers", Array.from(onlineUsers));
+    socket.join(userId);
 
-    // Join private room for direct messages
     socket.on("joinChat", ({ targetUserId }) => {
       const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
-      console.log(`🔗 ${userId} joined room ${roomId}`);
     });
 
-    // ✅ Handle message send
-    socket.on("sendMessage", async ({ targetUserId, text, firstName, lastName }) => {
+    socket.on("sendMessage", async ({ targetUserId, text }) => {
       if (!targetUserId || !text?.trim()) return;
 
       try {
@@ -70,10 +64,7 @@ const initializeSocket = (server) => {
         });
 
         if (!chat) {
-          chat = new Chat({
-            participants: [userId, targetUserId],
-            messages: [],
-          });
+          chat = new Chat({ participants: [userId, targetUserId], messages: [] });
         }
 
         const message = {
@@ -85,19 +76,22 @@ const initializeSocket = (server) => {
         chat.messages.push(message);
         await chat.save();
 
-        // 🔁 Emit message to both users in the room
+        // ✅ Fetch sender data including photo
+        const sender = await User.findById(userId).select("firstName lastName photoUrl");
+
         io.to(roomId).emit("messageReceived", {
-          firstName,
-          lastName,
+          userId: sender._id,
+          firstName: sender.firstName,
+          lastName: sender.lastName,
+          photoUrl: sender.photoUrl, // ✅ Send profile picture
           text: message.text,
-          userId,
+          createdAt: message.createdAt,
         });
       } catch (err) {
         console.error("❌ Send message error:", err.message);
       }
     });
 
-    // ✅ On Disconnect
     socket.on("disconnect", () => {
       console.log("❌ Disconnected:", userId);
       onlineUsers.delete(userId);
