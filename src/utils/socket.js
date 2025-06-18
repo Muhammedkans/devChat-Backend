@@ -1,4 +1,3 @@
-// socket.js
 const socketIO = require("socket.io");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
@@ -14,13 +13,17 @@ const getSecretRoomId = (userId1, userId2) => {
 const initializeSocket = (server) => {
   const io = socketIO(server, {
     cors: {
-      origin: ["http://localhost:5173", "https://mkans-dev-chat-web.vercel.app"],
+      origin: [
+        "http://localhost:5173",
+        "https://mkans-dev-chat-web.vercel.app"
+      ],
       credentials: true,
     },
   });
 
   const onlineUsers = new Set();
 
+  // ✅ Socket Middleware - Auth
   io.use((socket, next) => {
     try {
       const cookie = socket.handshake.headers.cookie;
@@ -40,19 +43,22 @@ const initializeSocket = (server) => {
     }
   });
 
+  // ✅ On Socket Connection
   io.on("connection", (socket) => {
     const userId = socket.user._id;
     console.log("✅ Socket connected:", userId);
 
     onlineUsers.add(userId);
     io.emit("updateOnlineUsers", Array.from(onlineUsers));
-    socket.join(userId);
 
+    // Join private room for direct messages
     socket.on("joinChat", ({ targetUserId }) => {
       const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
+      console.log(`🔗 ${userId} joined room ${roomId}`);
     });
 
+    // ✅ Handle message send
     socket.on("sendMessage", async ({ targetUserId, text, firstName, lastName }) => {
       if (!targetUserId || !text?.trim()) return;
 
@@ -64,7 +70,10 @@ const initializeSocket = (server) => {
         });
 
         if (!chat) {
-          chat = new Chat({ participants: [userId, targetUserId], messages: [] });
+          chat = new Chat({
+            participants: [userId, targetUserId],
+            messages: [],
+          });
         }
 
         const message = {
@@ -76,6 +85,7 @@ const initializeSocket = (server) => {
         chat.messages.push(message);
         await chat.save();
 
+        // 🔁 Emit message to both users in the room
         io.to(roomId).emit("messageReceived", {
           firstName,
           lastName,
@@ -87,6 +97,7 @@ const initializeSocket = (server) => {
       }
     });
 
+    // ✅ On Disconnect
     socket.on("disconnect", () => {
       console.log("❌ Disconnected:", userId);
       onlineUsers.delete(userId);
@@ -98,6 +109,13 @@ const initializeSocket = (server) => {
 };
 
 module.exports = initializeSocket;
+
+
+
+
+
+
+
 
 
 
