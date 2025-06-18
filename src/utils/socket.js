@@ -1,33 +1,32 @@
-const socket = require("socket.io");
+// socket.js
+const socketIO = require("socket.io");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
 const { Chat } = require("../models/chat");
-const { Post } = require("../models/post");
 
-const getSecretRoomId = (userId, targetUserId) => {
-  return crypto.createHash("sha256")
-    .update([userId, targetUserId].sort().join("-"))
+const getSecretRoomId = (userId1, userId2) => {
+  return crypto
+    .createHash("sha256")
+    .update([userId1, userId2].sort().join("-"))
     .digest("hex");
 };
 
 const initializeSocket = (server) => {
-  const io = socket(server, {
+  const io = socketIO(server, {
     cors: {
-      origin: [
-        "http://localhost:5173",
-        "https://mkans-dev-chat-web.vercel.app",
-      ],
+      origin: ["http://localhost:5173", "https://mkans-dev-chat-web.vercel.app"],
       credentials: true,
     },
   });
 
-  // 🛡️ JWT Authentication Middleware
+  const onlineUsers = new Set();
+
   io.use((socket, next) => {
     try {
-      const cookies = socket.handshake.headers.cookie;
-      const token = cookies?.split("=")[1];
+      const cookie = socket.handshake.headers.cookie;
+      if (!cookie) return next(new Error("Cookie not found"));
 
+      const token = cookie.split("=")[1];
       if (!token) return next(new Error("Token missing"));
 
       jwt.verify(token, process.env.JWT_TOKEN, (err, decoded) => {
@@ -35,125 +34,63 @@ const initializeSocket = (server) => {
         socket.user = decoded;
         next();
       });
-    } catch (err) {
-      next(new Error("Auth error"));
+    } catch (error) {
+      console.error("Auth error:", error.message);
+      next(new Error("Authentication failed"));
     }
   });
 
   io.on("connection", (socket) => {
-    console.log("✅ User connected:", socket.user._id);
-    socket.join(socket.user._id);
+    const userId = socket.user._id;
+    console.log("✅ Socket connected:", userId);
 
-    // ---------------- 🗨️ CHAT ----------------
+    onlineUsers.add(userId);
+    io.emit("updateOnlineUsers", Array.from(onlineUsers));
+    socket.join(userId);
+
     socket.on("joinChat", ({ targetUserId }) => {
-      const roomId = getSecretRoomId(socket.user._id, targetUserId);
+      const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
     });
 
-    socket.on("sendMessage", async ({ targetUserId, text }) => {
+    socket.on("sendMessage", async ({ targetUserId, text, firstName, lastName }) => {
+      if (!targetUserId || !text?.trim()) return;
+
       try {
-        const roomId = getSecretRoomId(socket.user._id, targetUserId);
+        const roomId = getSecretRoomId(userId, targetUserId);
 
         let chat = await Chat.findOne({
-          participants: { $all: [socket.user._id, targetUserId] },
+          participants: { $all: [userId, targetUserId] },
         });
 
         if (!chat) {
-          chat = new Chat({
-            participants: [socket.user._id, targetUserId],
-            messages: [],
-          });
+          chat = new Chat({ participants: [userId, targetUserId], messages: [] });
         }
 
-        const newMessage = {
-          senderId: socket.user._id,
+        const message = {
+          senderId: userId,
           text,
           createdAt: new Date(),
         };
 
-        chat.messages.push(newMessage);
+        chat.messages.push(message);
         await chat.save();
 
-        io.to(roomId).emit("messageReceived", newMessage);
-      } catch (err) {
-        console.error("Send Message Error:", err);
-      }
-    });
-
-    // ---------------- ❤️ LIKE / UNLIKE ----------------
-    socket.on("likeUpdate", async ({ postId, action }) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(postId)) {
-          throw new Error("Invalid postId");
-        }
-
-        const post = await Post.findById(postId);
-        if (!post) throw new Error("Post not found");
-
-        const actingUserId = socket.user._id;
-        const hasLiked = post.likes.some(
-          (id) => id.toString() === actingUserId.toString()
-        );
-
-        let updated = false;
-
-        if (action === "like" && !hasLiked) {
-          post.likes.push(actingUserId);
-          updated = true;
-        } else if (action === "unlike" && hasLiked) {
-          post.likes = post.likes.filter(
-            (id) => id.toString() !== actingUserId.toString()
-          );
-          updated = true;
-        }
-
-        if (updated) {
-          await post.save();
-
-          io.emit("likeUpdate", {
-            postId,
-            userId: actingUserId,
-            action,
-          });
-        }
-      } catch (err) {
-        console.error("Socket Like Error:", err.message);
-        socket.emit("likeError", { message: err.message });
-      }
-    });
-
-    // ---------------- 💬 COMMENT ----------------
-    socket.on("commentPost", async ({ postId, text }) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(postId)) {
-          throw new Error("Invalid postId");
-        }
-
-        const post = await Post.findById(postId);
-        if (!post) throw new Error("Post not found");
-
-        const newComment = {
-          _id: new mongoose.Types.ObjectId(),
-          user: socket.user._id,
-          text,
-          createdAt: new Date(),
-        };
-
-        post.comments.unshift(newComment);
-        await post.save();
-
-        io.emit("postCommented", {
-          postId,
-          comment: newComment,
+        io.to(roomId).emit("messageReceived", {
+          firstName,
+          lastName,
+          text: message.text,
+          userId,
         });
       } catch (err) {
-        console.error("Comment error:", err.message);
-        socket.emit("commentError", { message: err.message });
+        console.error("❌ Send message error:", err.message);
       }
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ User disconnected:", socket.user._id);
+      console.log("❌ Disconnected:", userId);
+      onlineUsers.delete(userId);
+      io.emit("updateOnlineUsers", Array.from(onlineUsers));
     });
   });
 
@@ -161,6 +98,14 @@ const initializeSocket = (server) => {
 };
 
 module.exports = initializeSocket;
+
+
+
+
+
+
+
+
 
 
 

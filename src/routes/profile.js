@@ -92,36 +92,33 @@ console.log("hahha")
 
 
   profileRouter.get('/users/:userId/posts', userAuth, async (req, res) => {
-    try {
-      const userId = req.params.userId;
-  
-      // Simple validation: Check if userId is a valid MongoDB ObjectId
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-      }
-  
-      // Fetch all posts by the user, sorted by latest first
-      const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
-  
-      // Check if posts exist
-      if (!posts || posts.length === 0) {
-        return res.status(404).json({ message: 'No posts found for this user' });
-      }
-  
-      // Send success response
-      res.status(200).json({ message: 'Posts fetched successfully', data: posts });
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-  
-      // Handle specific errors
-      if (error.name === 'CastError') {
-        return res.status(400).json({ message: 'Invalid data format' });
-      }
-  
-      // Generic error response
-      res.status(500).json({ message: 'Something went wrong', error: error.message });
+  try {
+    const userId = req.params.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID', data: [] });
     }
-  });
+
+    const posts = await Post.find({ user: userId }).sort({ createdAt: -1 });
+
+    // ✅ Always return a "data" key — even if it's empty
+    return res.status(200).json({
+      message: posts.length ? 'Posts fetched successfully' : 'No posts found for this user',
+      data: posts,
+    });
+
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+
+    const status = error.name === 'CastError' ? 400 : 500;
+    return res.status(status).json({
+      message: error.name === 'CastError' ? 'Invalid data format' : 'Something went wrong',
+      data: [], // ✅ Always include data field
+      error: error.message,
+    });
+  }
+});
+
 
 
   // Get user profile data (for logged-in user)

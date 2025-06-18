@@ -3,9 +3,13 @@ const { userAuth } = require("../middleware/userAuth");
 const connectionRequest = require("../models/connectionRequest");
 
 const User = require("../models/user");
+const { getUserProfile } = require("../controllers/userController");
 
 const userRouter = express.Router();
 const USER_SAFE_DATA ="firstName lastName photoUrl age gender skills about";
+
+
+userRouter.get("/users/:userId", userAuth, getUserProfile);
 
 userRouter.get("/request/review/recieved",userAuth,async (req,res)=>{
 try{
@@ -84,5 +88,6 @@ userRouter.get("/user/feed",userAuth, async (req, res)=>{
   }
   
 })
+
 
 module.exports = userRouter;
