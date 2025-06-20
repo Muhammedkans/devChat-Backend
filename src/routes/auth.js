@@ -1,96 +1,100 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
+const User = require("../models/user");
+const { validationSignUp } = require("../utils/validation");
+require("dotenv").config();
 
 const authRouter = express.Router();
 
-const {validationSignUp} = require("../utils/validation")
+// ✅ Check environment (for secure cookies)
+const isProduction = process.env.NODE_ENV === "production";
 
-const bcrypt = require("bcrypt");
+// ✅ Signup Route
+authRouter.post("/signup", async (req, res) => {
+  try {
+    validationSignUp(req); // Optional validation
 
-const User = require("../models/user");
+    const { firstName, lastName, emailId, password, age, gender, about } = req.body;
 
-require("dotenv").config();
+    const passwordHash = await bcrypt.hash(password, 10);
 
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash,
+      age,
+      gender,
+      about,
+    });
 
-authRouter.post("/signup", async (req, res)=>{
- 
-  validationSignUp(req);
- 
-  const {firstName, lastName, emailId, password,age,gender, about} = req.body;
- 
-  const passwordHash = await bcrypt.hash(password,10);
- 
-  const user = new User({
-   firstName,
-   lastName,
-   emailId,
-   password:passwordHash,
-   age,
-   gender,
-   about,
-  });
-  
- 
-  try{
-   const saveUser = await user.save()
-   const token = await saveUser.getJWT();  
- 
-  
-   
-   res.cookie("token", token, {
-    httpOnly: true,
-    secure: true, // Render uses HTTPS
-    sameSite: 'none', // Required for cross-origin cookies
-    expires: new Date(Date.now() + 8 * 3600000), // Expire in 8 hours
-  });
-  
-   res.json({message:" User added succefully", data:saveUser}); 
+    const savedUser = await user.save();
+    const token = await savedUser.getJWT();
 
- }catch(err){
-  
-   res.status(400).send(err +"failed to add to database");
- }
- 
- })
- 
+    // ✅ Set cookie depending on environment
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction, // 👉 true in production (HTTPS)
+      sameSite: isProduction ? "None" : "Lax", // 👉 'None' in prod, 'Lax' in dev
+      maxAge: 8 * 3600000, // 8 hours
+    });
 
+    res.status(201).json({
+      message: "User created successfully",
+      user: {
+        _id: savedUser._id,
+        firstName: savedUser.firstName,
+        lastName: savedUser.lastName,
+        emailId: savedUser.emailId,
+        photoUrl: savedUser.photoUrl,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Signup Error:", err.message);
+    res.status(400).json({ error: "Signup failed" });
+  }
+});
 
- authRouter.post("/login", async  (req, res)=>{
+// ✅ Login Route
+authRouter.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
 
-  try{
-
-    const {emailId, password} = req.body;
-
-    const user = await User.findOne({emailId:emailId})
-  
-    if(!user){
-      throw new Error(" invalid credential");
+    const user = await User.findOne({ emailId });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
-  
-    const isPassword = await user.validatePassword(password)
-  
-   if(isPassword){
-     
+
+    const isPasswordValid = await user.validatePassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
     const token = await user.getJWT();
-    
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true, // Render uses HTTPS
-      sameSite: 'none', // Required for cross-origin cookies
-      expires: new Date(Date.now() + 8 * 3600000), // Expire in 8 hours
+      secure: isProduction,
+      sameSite: isProduction ? "None" : "Lax",
+      maxAge: 8 * 3600000,
     });
-    res.send(user);
-   }
-   else{
-    res.status(400).send("invalid credetial");
-   }
+
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailId: user.emailId,
+        photoUrl: user.photoUrl,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Login Error:", err.message);
+    res.status(400).json({ error: "Login failed" });
   }
-  catch(err){
-    
-    res.status(400).send("invalid credetial");
-  }
-  
-})
+});
+
 
 authRouter.post("/logout",(req, res)=>{
  res.cookie("token",null,{expires:new Date(Date.now()),});

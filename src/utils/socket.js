@@ -2,7 +2,7 @@ const socketIO = require("socket.io");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { Chat } = require("../models/chat");
-const User = require("../models/user"); // ✅ Add this to fetch user info
+const User = require("../models/user");
 
 const getSecretRoomId = (userId1, userId2) => {
   return crypto
@@ -21,6 +21,7 @@ const initializeSocket = (server) => {
 
   const onlineUsers = new Set();
 
+  // ✅ Authenticate user using token from cookies
   io.use((socket, next) => {
     try {
       const cookie = socket.handshake.headers.cookie;
@@ -34,25 +35,38 @@ const initializeSocket = (server) => {
         socket.user = decoded;
         next();
       });
-    } catch (error) {
-      console.error("Auth error:", error.message);
-      next(new Error("Authentication failed"));
+    } catch (err) {
+      console.error("Socket auth error:", err.message);
+      return next(new Error("Authentication failed"));
     }
   });
 
+  // ✅ On new socket connection
   io.on("connection", (socket) => {
     const userId = socket.user._id;
     console.log("✅ Socket connected:", userId);
 
+    // ✅ Mark user online
     onlineUsers.add(userId);
     io.emit("updateOnlineUsers", Array.from(onlineUsers));
-    socket.join(userId);
+    socket.join(userId); // optional personal room
 
+    // ✅ Emit userOnline manually if frontend emits it again
+    socket.on("userOnline", (userIdFromClient) => {
+      if (userIdFromClient && !onlineUsers.has(userIdFromClient)) {
+        onlineUsers.add(userIdFromClient);
+        io.emit("updateOnlineUsers", Array.from(onlineUsers));
+        console.log("📡 userOnline emitted again:", userIdFromClient);
+      }
+    });
+
+    // ✅ Join private chat room
     socket.on("joinChat", ({ targetUserId }) => {
       const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
     });
 
+    // ✅ Send and save chat message
     socket.on("sendMessage", async ({ targetUserId, text }) => {
       if (!targetUserId || !text?.trim()) return;
 
@@ -76,22 +90,33 @@ const initializeSocket = (server) => {
         chat.messages.push(message);
         await chat.save();
 
-        // ✅ Fetch sender data including photo
         const sender = await User.findById(userId).select("firstName lastName photoUrl");
 
         io.to(roomId).emit("messageReceived", {
           userId: sender._id,
           firstName: sender.firstName,
           lastName: sender.lastName,
-          photoUrl: sender.photoUrl, // ✅ Send profile picture
+          photoUrl: sender.photoUrl,
           text: message.text,
           createdAt: message.createdAt,
         });
       } catch (err) {
-        console.error("❌ Send message error:", err.message);
+        console.error("❌ Error sending message:", err.message);
       }
     });
 
+    // ✅ Real-time Post Like Update
+    socket.on("likeUpdate", ({ postId, userId, action }) => {
+      // Broadcast to all (or optionally specific users)
+      io.emit("likeUpdate", { postId, userId, action }); // 👈 PostCard.jsx
+    });
+
+    // ✅ Optimized likeUpdated version to directly replace post (FeedPosts.jsx)
+    socket.on("likeUpdated", (updatedPost) => {
+      io.emit("likeUpdated", updatedPost);
+    });
+
+    // ✅ On disconnect
     socket.on("disconnect", () => {
       console.log("❌ Disconnected:", userId);
       onlineUsers.delete(userId);
@@ -103,6 +128,9 @@ const initializeSocket = (server) => {
 };
 
 module.exports = initializeSocket;
+
+
+
 
 
 
