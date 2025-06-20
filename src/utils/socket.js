@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { Chat } = require("../models/chat");
 const User = require("../models/user");
+const Post = require("../models/post"); // ✅ Needed for comment saving
 
 const getSecretRoomId = (userId1, userId2) => {
   return crypto
@@ -19,9 +20,8 @@ const initializeSocket = (server) => {
     },
   });
 
-  const onlineUsers = new Map(); // ✅ Use Map instead of Set for better tracking
+  const onlineUsers = new Map();
 
-  // ✅ Authenticate every socket
   io.use((socket, next) => {
     try {
       const cookie = socket.handshake.headers.cookie;
@@ -41,17 +41,14 @@ const initializeSocket = (server) => {
     }
   });
 
-  // ✅ New connection
   io.on("connection", (socket) => {
     const userId = socket.user._id;
     console.log("✅ Socket connected:", userId);
 
-    // ✅ Add to onlineUsers (handle multiple tabs by counting connections)
     const prevCount = onlineUsers.get(userId) || 0;
     onlineUsers.set(userId, prevCount + 1);
     io.emit("updateOnlineUsers", Array.from(onlineUsers.keys()));
 
-    // ✅ Re-auth from frontend (optional, fallback)
     socket.on("userOnline", (userIdFromClient) => {
       if (userIdFromClient && !onlineUsers.has(userIdFromClient)) {
         onlineUsers.set(userIdFromClient, 1);
@@ -60,13 +57,11 @@ const initializeSocket = (server) => {
       }
     });
 
-    // ✅ Join private chat
     socket.on("joinChat", ({ targetUserId }) => {
       const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
     });
 
-    // ✅ Send & Save chat message
     socket.on("sendMessage", async ({ targetUserId, text }) => {
       if (!targetUserId || !text?.trim()) return;
 
@@ -102,17 +97,30 @@ const initializeSocket = (server) => {
       }
     });
 
-    // ✅ Real-time like
+    // ✅ Like Feature
     socket.on("likeUpdate", ({ postId, userId, action }) => {
       io.emit("likeUpdate", { postId, userId, action });
     });
 
-    // ✅ Direct post replace for better feed update
     socket.on("likeUpdated", (updatedPost) => {
       io.emit("likeUpdated", updatedPost);
     });
 
-    // ✅ Disconnect: remove user only if no more sockets open
+    // ✅ ✅ ✅ Real-Time Comment Feature (NEW)
+    socket.on("newComment", async ({ postId, comment }) => {
+      try {
+        if (!postId || !comment?._id) return;
+
+        // You can optionally validate and fetch more info here
+        io.emit("newComment", {
+          postId,
+          comment,
+        });
+      } catch (err) {
+        console.error("❌ Error in newComment socket:", err.message);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("❌ Socket disconnected:", userId);
       const currentCount = onlineUsers.get(userId) || 0;
@@ -130,6 +138,7 @@ const initializeSocket = (server) => {
 };
 
 module.exports = initializeSocket;
+
 
 
 
