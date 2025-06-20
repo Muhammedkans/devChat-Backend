@@ -19,9 +19,9 @@ const initializeSocket = (server) => {
     },
   });
 
-  const onlineUsers = new Set();
+  const onlineUsers = new Map(); // ✅ Use Map instead of Set for better tracking
 
-  // ✅ Authenticate user using token from cookies
+  // ✅ Authenticate every socket
   io.use((socket, next) => {
     try {
       const cookie = socket.handshake.headers.cookie;
@@ -41,42 +41,39 @@ const initializeSocket = (server) => {
     }
   });
 
-  // ✅ On new socket connection
+  // ✅ New connection
   io.on("connection", (socket) => {
     const userId = socket.user._id;
     console.log("✅ Socket connected:", userId);
 
-    // ✅ Mark user online
-    onlineUsers.add(userId);
-    io.emit("updateOnlineUsers", Array.from(onlineUsers));
-    socket.join(userId); // optional personal room
+    // ✅ Add to onlineUsers (handle multiple tabs by counting connections)
+    const prevCount = onlineUsers.get(userId) || 0;
+    onlineUsers.set(userId, prevCount + 1);
+    io.emit("updateOnlineUsers", Array.from(onlineUsers.keys()));
 
-    // ✅ Emit userOnline manually if frontend emits it again
+    // ✅ Re-auth from frontend (optional, fallback)
     socket.on("userOnline", (userIdFromClient) => {
       if (userIdFromClient && !onlineUsers.has(userIdFromClient)) {
-        onlineUsers.add(userIdFromClient);
-        io.emit("updateOnlineUsers", Array.from(onlineUsers));
-        console.log("📡 userOnline emitted again:", userIdFromClient);
+        onlineUsers.set(userIdFromClient, 1);
+        io.emit("updateOnlineUsers", Array.from(onlineUsers.keys()));
+        console.log("📡 userOnline emitted manually by client:", userIdFromClient);
       }
     });
 
-    // ✅ Join private chat room
+    // ✅ Join private chat
     socket.on("joinChat", ({ targetUserId }) => {
       const roomId = getSecretRoomId(userId, targetUserId);
       socket.join(roomId);
     });
 
-    // ✅ Send and save chat message
+    // ✅ Send & Save chat message
     socket.on("sendMessage", async ({ targetUserId, text }) => {
       if (!targetUserId || !text?.trim()) return;
 
       try {
         const roomId = getSecretRoomId(userId, targetUserId);
 
-        let chat = await Chat.findOne({
-          participants: { $all: [userId, targetUserId] },
-        });
-
+        let chat = await Chat.findOne({ participants: { $all: [userId, targetUserId] } });
         if (!chat) {
           chat = new Chat({ participants: [userId, targetUserId], messages: [] });
         }
@@ -105,22 +102,27 @@ const initializeSocket = (server) => {
       }
     });
 
-    // ✅ Real-time Post Like Update
+    // ✅ Real-time like
     socket.on("likeUpdate", ({ postId, userId, action }) => {
-      // Broadcast to all (or optionally specific users)
-      io.emit("likeUpdate", { postId, userId, action }); // 👈 PostCard.jsx
+      io.emit("likeUpdate", { postId, userId, action });
     });
 
-    // ✅ Optimized likeUpdated version to directly replace post (FeedPosts.jsx)
+    // ✅ Direct post replace for better feed update
     socket.on("likeUpdated", (updatedPost) => {
       io.emit("likeUpdated", updatedPost);
     });
 
-    // ✅ On disconnect
+    // ✅ Disconnect: remove user only if no more sockets open
     socket.on("disconnect", () => {
-      console.log("❌ Disconnected:", userId);
-      onlineUsers.delete(userId);
-      io.emit("updateOnlineUsers", Array.from(onlineUsers));
+      console.log("❌ Socket disconnected:", userId);
+      const currentCount = onlineUsers.get(userId) || 0;
+      if (currentCount <= 1) {
+        onlineUsers.delete(userId);
+      } else {
+        onlineUsers.set(userId, currentCount - 1);
+      }
+
+      io.emit("updateOnlineUsers", Array.from(onlineUsers.keys()));
     });
   });
 
@@ -128,6 +130,7 @@ const initializeSocket = (server) => {
 };
 
 module.exports = initializeSocket;
+
 
 
 
