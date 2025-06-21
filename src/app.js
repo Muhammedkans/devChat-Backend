@@ -15,7 +15,7 @@ const userRouter = require("./routes/userRouter");
 app.use(cookieParser());
 const cors = require("cors"); 
 const http = require("http");
-const initializeSocket  = require("../src/utils/socket");
+const {initializeSocket}  = require("../src/utils/socket");
 const chatRouter = require("./routes/chat");
 const paymentRouter = require("./routes/payment");
 const postRouter = require("./routes/post");

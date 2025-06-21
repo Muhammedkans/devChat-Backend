@@ -1,9 +1,12 @@
+// ✅ socket.js
 const socketIO = require("socket.io");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { Chat } = require("../models/chat");
 const User = require("../models/user");
-const Post = require("../models/post"); // ✅ Needed for comment saving
+const Post = require("../models/postModel");
+
+let io; // ✅ Global io variable
 
 const getSecretRoomId = (userId1, userId2) => {
   return crypto
@@ -13,7 +16,7 @@ const getSecretRoomId = (userId1, userId2) => {
 };
 
 const initializeSocket = (server) => {
-  const io = socketIO(server, {
+  io = socketIO(server, {
     cors: {
       origin: ["http://localhost:5173", "https://mkans-dev-chat-web.vercel.app"],
       credentials: true,
@@ -97,7 +100,7 @@ const initializeSocket = (server) => {
       }
     });
 
-    // ✅ Like Feature
+    // ✅ Real-Time Like
     socket.on("likeUpdate", ({ postId, userId, action }) => {
       io.emit("likeUpdate", { postId, userId, action });
     });
@@ -106,16 +109,12 @@ const initializeSocket = (server) => {
       io.emit("likeUpdated", updatedPost);
     });
 
-    // ✅ ✅ ✅ Real-Time Comment Feature (NEW)
+    // ✅ Real-Time Comment
     socket.on("newComment", async ({ postId, comment }) => {
       try {
         if (!postId || !comment?._id) return;
 
-        // You can optionally validate and fetch more info here
-        io.emit("newComment", {
-          postId,
-          comment,
-        });
+        io.emit("newComment", { postId, comment });
       } catch (err) {
         console.error("❌ Error in newComment socket:", err.message);
       }
@@ -137,7 +136,19 @@ const initializeSocket = (server) => {
   return io;
 };
 
-module.exports = initializeSocket;
+// ✅ Export both
+const getIO = () => {
+  if (!io) {
+    throw new Error("Socket.io not initialized");
+  }
+  return io;
+};
+
+module.exports = {
+  initializeSocket,
+  getIO,
+};
+
 
 
 

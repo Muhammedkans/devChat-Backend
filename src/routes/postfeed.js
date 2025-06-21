@@ -4,7 +4,7 @@ const mongoose = require("mongoose")
 const User = require("../models/user");
 const { userAuth } = require("../middleware/userAuth");
 const postFeed = express.Router();
-const Post = require("../models/post")
+const Post = require("../models/postModel")
 
 postFeed.get('/postFeed', userAuth, async (req, res) => {
   try {

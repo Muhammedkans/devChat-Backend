@@ -1,6 +1,6 @@
 const express = require("express");
 const { userAuth } = require("../middleware/userAuth");
-const Post = require("../models/post");
+const Post = require("../models/postModel");
 const cloudinary = require("cloudinary");
 const Like =  require("../models/like");
 const mongoose = require("mongoose");

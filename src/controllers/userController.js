@@ -2,7 +2,7 @@
 
 const mongoose = require("mongoose");
 const User = require("../models/user");
-const Post = require("../models/post");
+const Post = require("../models/postModel.js");
 
 const getUserProfile = async (req, res) => {
   try {

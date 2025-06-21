@@ -8,7 +8,7 @@ const User = require("../models/user");
 const profileRouter = express.Router();
 const cloudinary = require("../utils/cloudinary")
 const fileUpload = require('express-fileupload');
-const Post = require("../models/post")
+const Post = require("../models/postModel")
 profileRouter.use(fileUpload({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 }));
