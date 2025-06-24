@@ -1,59 +1,85 @@
 const Comment = require("../models/Comment");
-const Post = require("../models/postModel"); // ✅ Step 1: Import Post model
-const { getIO } = require("../utils/socket"); // ✅ For real-time update (if using socket.io)
+const Post = require("../models/postModel");
+const { getIO } = require("../utils/socket");
 
-
-// 🔥 Create Comment
+// ✅ CREATE COMMENT (Real-time Safe & Clean)
 const createComment = async (req, res) => {
   try {
     const { text } = req.body;
     const { postId } = req.params;
     const userId = req.user._id;
 
-    // ✅ Create comment
+    if (!text || !postId || !userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // ✅ Create the new comment
     const comment = await Comment.create({
       text,
       post: postId,
       user: userId,
     });
 
+    // ✅ Populate user fields for frontend display
     await comment.populate("user", "firstName lastName photoUrl");
 
-    // ✅ Step 2: Increment comment count in Post
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { $inc: { commentCount: 1 } },
-      { new: true }
-    );
+    // ✅ Get accurate comment count from DB
+    const commentCount = await Comment.countDocuments({ post: postId });
 
-    // ✅ Step 3: Emit socket event for comment count update
-    const io = getIO(); // get socket instance
-    io.emit("commentCountUpdate", {
-      postId: updatedPost._id.toString(),
-      commentCount: updatedPost.commentCount,
+    // ✅ Update post comment count
+    await Post.findByIdAndUpdate(postId, { commentCount });
+
+    // ✅ Emit real-time events to all clients
+    const io = getIO();
+    io.emit("newComment", { postId, comment });
+    io.emit("commentCountUpdate", { postId, commentCount });
+
+    // ✅ Send response
+    res.status(201).json({
+      success: true,
+      data: comment,
     });
 
-    res.status(201).json({ success: true, data: comment });
   } catch (err) {
-    console.error("Comment error:", err);
-    res.status(500).json({ success: false, message: "Failed to add comment" });
+    console.error("❌ Comment creation failed:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to add comment",
+    });
   }
 };
 
-// 📥 Get All Comments
+// ✅ GET COMMENTS FOR A SPECIFIC POST
 const getCommentsForPost = async (req, res) => {
   try {
     const { postId } = req.params;
 
+    if (!postId) {
+      return res.status(400).json({
+        success: false,
+        message: "Post ID is required",
+      });
+    }
+
     const comments = await Comment.find({ post: postId })
       .sort({ createdAt: -1 })
-      .populate("user", "firstName lastName photoUrl");
+      .populate("user", "firstName lastName photoUrl")
+      .lean();
 
-    res.status(200).json({ success: true, data: comments });
+    res.status(200).json({
+      success: true,
+      data: comments,
+    });
+
   } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch comments" });
+    console.error("❌ Fetching comments failed:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch comments",
+    });
   }
 };
 
@@ -61,4 +87,10 @@ module.exports = {
   createComment,
   getCommentsForPost,
 };
+
+
+
+
+
+
 
