@@ -90,4 +90,31 @@ userRouter.get("/user/feed",userAuth, async (req, res)=>{
 })
 
 
+
+
+
+// 🔍 GET /api/search/users?q=arjun
+userRouter.get("/search/users", userAuth, async (req, res) => {
+  try {
+    const query = req.query.q;
+
+    if (!query || query.trim() === "") {
+      return res.status(400).json({ message: "Query is required" });
+    }
+
+    // 🔍 Search by first name or last name (case insensitive)
+    const users = await User.find({
+      $or: [
+        { firstName: { $regex: query, $options: "i" } },
+        { lastName: { $regex: query, $options: "i" } },
+      ],
+    }).select("firstName lastName photoUrl about");
+
+    res.status(200).json({ message: "Users fetched", data: users });
+  } catch (error) {
+    console.error("Search error:", error.message);
+    res.status(500).json({ message: "Something went wrong", error: error.message });
+  }
+});
+
 module.exports = userRouter;

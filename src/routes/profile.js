@@ -9,9 +9,6 @@ const profileRouter = express.Router();
 const cloudinary = require("../utils/cloudinary")
 const fileUpload = require('express-fileupload');
 const Post = require("../models/postModel")
-profileRouter.use(fileUpload({
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-}));
 
 profileRouter.post('/upload-photo', userAuth, async (req, res) => {
   try {
@@ -53,7 +50,7 @@ console.log("delete uerser")
 console.log("hahha")
     res.status(200).json({ message: 'Profile photo updated successfully', data: user });
   } catch (error) {
-    console.error('Error uploading photo:', error);
+    console.error('Error uploading photo:', error.message);
     res.status(500).json({ message: 'Something went wrong', error: error.message });
   }
 });

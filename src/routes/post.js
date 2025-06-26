@@ -1,97 +1,64 @@
 const express = require("express");
+const mongoose = require("mongoose")
 const { userAuth } = require("../middleware/userAuth");
 const Post = require("../models/postModel");
-const cloudinary = require("cloudinary");
-const Like =  require("../models/like");
-const mongoose = require("mongoose");
+const cloudinary = require("cloudinary").v2;
 const postRouter = express.Router();
-const User = require("../models/user")
-
-postRouter.post('/posts', userAuth, async (req, res) => {
+const User = require("../models/user");
+const Like = require("../models/like");
+postRouter.post("/posts", userAuth, async (req, res) => {
   try {
-    // Get the authenticated user info from userAuth middleware
     const user = req.user;
+    const contentText = req.body.contentText || "";
+    let contentImageUrl = "";
 
-    // Get the optional text content from the request body
-    // (when the client sends text with the post, it should be in req.body.contentText)
-    const contentText = req.body.contentText || ''; // If no text sent, make it empty string
-
-    // Initialize an empty variable to hold the image URL
-    let contentImageUrl = '';
-
-    // Check if the request has files (image uploaded)
     if (req.files && req.files.photo) {
-      const file = req.files.photo; // Get the uploaded image file
+      const file = req.files.photo;
 
-      // Debug print file info for developer to check
-      console.log('File Details:', {
-        name: file.name,
-        size: file.size,
-        mimetype: file.mimetype,
-        tempFilePath: file.tempFilePath,
+      // ✅ Validate MIME type
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        return res.status(400).json({ message: "Invalid image type" });
+      }
+
+      // ✅ Validate size (5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        return res.status(400).json({ message: "Image too large" });
+      }
+
+      // ✅ Convert to base64 and upload to Cloudinary
+      const base64Image = file.data.toString("base64");
+      const dataUri = `data:${file.mimetype};base64,${base64Image}`;
+
+      const result = await cloudinary.uploader.upload(dataUri, {
+        folder: "posts",
       });
 
-      // Allowed image MIME types — these are the formats we accept
-      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
-      // Check if uploaded file is allowed type
-      if (!allowedMimeTypes.includes(file.mimetype)) {
-        console.log(file.mimetype);
-        return res.status(400).json({ message: 'Invalid file type. Only JPEG, PNG, GIF, and WEBP are allowed.' });
-      }
-
-      // Limit file size to max 5MB
-      const maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (file.size > maxFileSize) {
-        return res.status(400).json({ message: 'File size exceeds the limit of 5MB.' });
-      }
-
-      // Upload the image to Cloudinary
-      // Note: We convert file buffer to base64 string and send to Cloudinary uploader
-      const result = await cloudinary.uploader.upload(
-        `data:${file.mimetype};base64,${file.data.toString('base64')}`, 
-        {
-          folder: 'posts', // Put the image inside 'posts' folder in Cloudinary
-        }
-      );
-
-      // Store the secure Cloudinary URL in contentImageUrl to save later
       contentImageUrl = result.secure_url;
     }
 
-    // Validation: 
-    // If both contentText is empty AND no image was uploaded, then return error
     if (!contentText && !contentImageUrl) {
-      return res.status(400).json({ message: 'Please provide text content or upload an image for the post.' });
+      return res.status(400).json({ message: "Post must have text or image" });
     }
 
-    // Create new Post document with the available data
     const post = new Post({
-      contentText,        // Save text content (may be empty)
-      contentImageUrl,    // Save image URL (may be empty)
-      user: user._id,     // Save reference to the user who created the post
+      contentText,
+      contentImageUrl,
+      user: user._id,
     });
 
-    // Save the post in the database (MongoDB)
     await post.save();
 
-    // Update user's posts count by 1 (increase by 1)
     user.postsCount += 1;
     await user.save();
 
-    // Respond to client with success message and the new post data
-    res.status(201).json({ message: 'Post created successfully', data: post });
-
-  } catch (error) {
-    // If anything goes wrong in the above steps, catch the error and print it
-    console.error('Error creating post:', error);
-    // Send generic error message to client with error details
-    res.status(500).json({ message: 'Something went wrong', error: error.message });
+    res.status(201).json({ message: "Post created", data: post });
+  } catch (err) {
+    console.error("❌ Post upload error:", err);
+    res.status(500).json({ message: "Something went wrong", error: err.message });
   }
 });
-
-
-
 
 
 postRouter.post('/posts/:postId/like', userAuth, async (req, res) => {
