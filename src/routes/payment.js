@@ -33,15 +33,19 @@ const User = require("../models/user");
 
 
     const payment = new Payment({
-      userId: req.user._id,
-      orderId:order.id,
-      status:order.status,
-      amount:order.amount,
-      currency:order.currency,
-      receipt:order.receipt,
-      notes:order.notes
+  userId: req.user._id,
+  orderId: order.id,
+  status: order.status,
+  amount: order.amount,
+  currency: order.currency,
+  receipt: order.receipt,
+  notes: {
+    firstName,
+    lastName,
+    memberShipType: membershipType // ✅ save it manually, no trust issues
+  }
+});
 
-    });
 
  const savedPayment  = await payment.save();
 
@@ -65,15 +69,18 @@ if(!isWebhook){
 }
 
 const paymentDetails = req.body.payload.payment.entity;
+const payment = await Payment.findOne({ orderId: paymentDetails.order_id });
 
-const payment  = await Payment.findOne({orderId:paymentDetails.order_id})
 payment.status = paymentDetails.status;
 await payment.save();
 
-const user = await User.findOne({_id:payment.userId})
-user.isPremium = true;
-user.membershipType = payment.notes.memberShipType;
-await user.save();
+// ✅ Check if payment.notes exists & membershipType is safe
+if (payment.notes?.memberShipType) {
+  const user = await User.findOne({ _id: payment.userId });
+  user.isPremium = true;
+  user.membershipType = payment.notes.memberShipType;
+  await user.save();
+}
 
 res.status(200).json({msg: "webhook recieved succefully"});
 
