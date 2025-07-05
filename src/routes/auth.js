@@ -96,10 +96,16 @@ authRouter.post("/login", async (req, res) => {
 });
 
 
-authRouter.post("/logout",(req, res)=>{
- res.cookie("token",null,{expires:new Date(Date.now()),});
- res.send("succefully logout");
-})
+authRouter.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // ✅ use true only in production
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // ✅ required for cross-origin cookies
+  });
+
+  return res.status(200).json({ message: "Logged out successfully" });
+});
+
 
 
 module.exports = authRouter;
