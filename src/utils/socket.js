@@ -65,8 +65,10 @@ const initializeSocket = (server) => {
     });
 
     // ✅ Handle Send Message
-    socket.on("sendMessage", async ({ targetUserId, text }) => {
-      if (!targetUserId || !text?.trim()) return;
+    socket.on("sendMessage", async ({ targetUserId, text, audioUrl, messageType = "text" }) => {
+      if (!targetUserId) return;
+      if (messageType === "text" && !text?.trim()) return;
+      if (messageType === "audio" && !audioUrl) return;
 
       const roomId = getSecretRoomId(userId, targetUserId);
 
@@ -81,7 +83,9 @@ const initializeSocket = (server) => {
 
         const message = {
           senderId: userId,
-          text,
+          text: messageType === "text" ? text : "",
+          audioUrl: messageType === "audio" ? audioUrl : "",
+          messageType,
           createdAt: new Date(),
         };
 
@@ -96,6 +100,8 @@ const initializeSocket = (server) => {
           lastName: sender.lastName,
           photoUrl: sender.photoUrl,
           text: message.text,
+          audioUrl: message.audioUrl,
+          messageType: message.messageType,
           createdAt: message.createdAt,
         };
 

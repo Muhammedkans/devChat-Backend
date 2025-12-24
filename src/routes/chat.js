@@ -35,6 +35,33 @@ chatRouter.get("/chat/:targetUserId", userAuth, async (req, res) => {
   }
 });
 
+// 🎤 Upload Voice Note
+const cloudinary = require("../utils/cloudinary");
+
+chatRouter.post("/chat/upload-audio", userAuth, async (req, res) => {
+  try {
+    if (!req.files || !req.files.audio) {
+      return res.status(400).json({ message: "No audio file uploaded" });
+    }
+
+    const file = req.files.audio;
+
+    // Upload to Cloudinary as "video" (Cloudinary uses 'video' type for audio too)
+    const result = await cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.data.toString("base64")}`, {
+      resource_type: "video",
+      folder: "chat-voice-notes",
+    });
+
+    res.status(200).json({
+      message: "Audio uploaded successfully",
+      audioUrl: result.secure_url
+    });
+  } catch (error) {
+    console.error("Audio Upload Error:", error);
+    res.status(500).json({ message: "Failed to upload audio", error: error.message });
+  }
+});
+
 module.exports = chatRouter;
 
 

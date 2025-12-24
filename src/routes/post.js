@@ -6,6 +6,7 @@ const cloudinary = require("cloudinary").v2;
 const postRouter = express.Router();
 const User = require("../models/user");
 const Like = require("../models/like");
+const { moderateContent } = require("../utils/aiModerator"); // 🤖 AI Moderator
 postRouter.post("/posts", userAuth, async (req, res) => {
   try {
     const user = req.user;
@@ -38,8 +39,20 @@ postRouter.post("/posts", userAuth, async (req, res) => {
       contentImageUrl = result.secure_url;
     }
 
+    const { moderateContent } = require("../utils/aiModerator"); // 🤖 AI Moderator
+
     if (!contentText && !contentImageUrl) {
       return res.status(400).json({ message: "Post must have text or image" });
+    }
+
+    // 🤖 AI Safety Check
+    const moderationResult = moderateContent(contentText);
+    if (!moderationResult.isSafe) {
+      return res.status(400).json({
+        message: "Your post failed our Community Guidelines check.",
+        reason: moderationResult.reason,
+        flagged: moderationResult.flaggedWords
+      });
     }
 
     const post = new Post({
@@ -96,6 +109,17 @@ postRouter.post('/posts/:postId/like', userAuth, async (req, res) => {
     }
     postUser.likesCount += 1; // Increment likesCount
     await postUser.save();
+
+    // 🔔 Create Notification (If not liking own post)
+    if (String(postUser._id) !== String(userId)) {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        recipient: postUser._id,
+        sender: userId,
+        type: "like",
+        post: post._id,
+      });
+    }
 
     // Step 5: Send success response
     res.status(201).json({ message: 'Post liked successfully', data: like });
@@ -166,9 +190,9 @@ postRouter.delete('/posts/:postId/like', userAuth, async (req, res) => {
   }
 });
 
-postRouter.get("/posts/all",userAuth,async (req, res)=>{
-try {
-   const userId = req.user._id;
+postRouter.get("/posts/all", userAuth, async (req, res) => {
+  try {
+    const userId = req.user._id;
 
     const posts = await Post.find({ user: userId }).populate("user", "firstName lastName photoUrl");
 
@@ -177,7 +201,56 @@ try {
     console.error("Error fetching user posts:", error.message);
     res.status(500).json({ success: false, message: "Something went wrong" });
   }
-})
+});
+
+// 🔖 Save/Bookmark a Post
+postRouter.post("/posts/:postId/save", userAuth, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (user.savedPosts.includes(postId)) {
+      return res.status(400).json({ message: "Post already saved" });
+    }
+
+    user.savedPosts.push(postId);
+    await user.save();
+
+    res.status(200).json({ message: "Post saved successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
+// ❌ Unsave/Remove Bookmark
+postRouter.delete("/posts/:postId/save", userAuth, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const user = await User.findById(req.user._id);
+
+    user.savedPosts = user.savedPosts.filter((id) => id.toString() !== postId);
+    await user.save();
+
+    res.status(200).json({ message: "Post removed from bookmarks" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
+// 📂 Get All Saved Posts
+postRouter.get("/posts/saved", userAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: "savedPosts",
+      populate: { path: "user", select: "firstName lastName photoUrl" }
+    });
+
+    res.status(200).json({ data: user.savedPosts });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
 module.exports = postRouter;
 
 

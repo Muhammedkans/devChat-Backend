@@ -8,17 +8,33 @@ const { userAuth } = require("../middleware/userAuth");
 const postFeed = express.Router();
 
 // ✅ Route to get all posts (not just followed users)
+// ✅ Optimized Route with Pagination (Lazy Loading)
 postFeed.get("/postFeed", userAuth, async (req, res) => {
   try {
-    // ✅ Fetch all posts from all users, newest first
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // ✅ Fetch only `limit` posts at a time (Fast & Scalable)
     const posts = await Post.find({})
       .sort({ createdAt: -1 })
-      .populate("user", "firstName lastName photoUrl") // show user info
+      .skip(skip)
+      .limit(limit)
+      .populate("user", "firstName lastName photoUrl headline") // Added headline
       .lean();
+
+    const totalPosts = await Post.countDocuments();
+    const hasMore = skip + posts.length < totalPosts;
 
     res.status(200).json({
       message: "Public feed fetched successfully",
       data: posts,
+      pagination: {
+        page,
+        limit,
+        hasMore,
+        totalPosts
+      }
     });
 
   } catch (error) {

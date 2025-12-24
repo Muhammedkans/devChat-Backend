@@ -22,7 +22,10 @@ const paymentRouter = require("./routes/payment");
 const postRouter = require("./routes/post");
 const followRouter = require("./routes/follow");
 const postFeed = require("./routes/postfeed");
-const commentRouter = require("./routes/commentRoutes");
+const commentRoutes = require("./routes/commentRoutes");
+const aiRouter = require("./routes/aiRoute"); // 🤖 AI Route
+const notificationRouter = require("./routes/notification"); // 🔔 Notifications
+const analyticsRouter = require("./routes/analytics"); // 📈 Analytics
 
 // ✅ Middlewares
 app.use(express.json());
@@ -51,6 +54,9 @@ app.use("/", postRouter);
 app.use("/", followRouter);
 app.use("/", postFeed);
 app.use("/", commentRouter);
+app.use("/", aiRouter); // 🤖 Enable AI Features
+app.use("/", notificationRouter);
+app.use("/", analyticsRouter);
 
 // ✅ Create server and connect DB
 const server = http.createServer(app);

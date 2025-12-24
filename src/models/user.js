@@ -1,4 +1,4 @@
-const mongoose  = require("mongoose");
+const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -89,7 +89,10 @@ const userSchema = new mongoose.Schema({
   },
   skills: {
     type: [String],
-  }
+  },
+
+  // 🔖 Saved Posts (Bookmarks)
+  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
 }, {
   timestamps: true,
 });
