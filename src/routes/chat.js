@@ -45,12 +45,15 @@ chatRouter.post("/chat/upload-audio", userAuth, async (req, res) => {
     }
 
     const file = req.files.audio;
+    console.log("🎤 Received Audio File:", file.name, file.mimetype, file.size);
 
-    // Upload to Cloudinary as "video" (Cloudinary uses 'video' type for audio too)
+    // Upload to Cloudinary with 'auto' resource type to handle various formats
     const result = await cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.data.toString("base64")}`, {
-      resource_type: "video",
+      resource_type: "auto",
       folder: "chat-voice-notes",
     });
+
+    console.log("✅ Audio Uploaded to Cloudinary:", result.secure_url);
 
     res.status(200).json({
       message: "Audio uploaded successfully",

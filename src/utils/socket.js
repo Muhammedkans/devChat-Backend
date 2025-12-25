@@ -111,6 +111,17 @@ const initializeSocket = (server) => {
       }
     });
 
+    // 🤝 Connection Requests (Real-time)
+    socket.on("sendConnectionRequest", ({ toUserId, fromUser }) => {
+      // Notify the recipient if they are online
+      io.emit("newConnectionRequest", { toUserId, fromUser });
+    });
+
+    socket.on("connectionResponse", ({ toUserId, fromUserId, status }) => {
+      // status: 'accepted' or 'rejected'
+      io.emit("connectionStatusUpdate", { toUserId, fromUserId, status });
+    });
+
     // ✅ Like Updates Broadcast
     socket.on("likeUpdate", ({ postId, userId, action }) => {
       if (!postId || !userId || !["like", "unlike"].includes(action)) return;

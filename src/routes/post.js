@@ -209,6 +209,10 @@ postRouter.post("/posts/:postId/save", userAuth, async (req, res) => {
     const { postId } = req.params;
     const user = await User.findById(req.user._id);
 
+    if (!user.savedPosts) {
+      user.savedPosts = [];
+    }
+
     if (user.savedPosts.includes(postId)) {
       return res.status(400).json({ message: "Post already saved" });
     }
