@@ -26,6 +26,7 @@ const commentRoutes = require("./routes/commentRoutes");
 const aiRouter = require("./routes/aiRoute"); // 🤖 AI Route
 const notificationRouter = require("./routes/notification"); // 🔔 Notifications
 const analyticsRouter = require("./routes/analytics"); // 📈 Analytics
+const projectRouter = require("./routes/project"); // 💻 Projects
 
 // ✅ Middlewares
 app.use(express.json());
@@ -53,10 +54,11 @@ app.use("/", paymentRouter);
 app.use("/", postRouter);
 app.use("/", followRouter);
 app.use("/", postFeed);
-app.use("/", commentRouter);
+app.use("/", commentRoutes);
 app.use("/", aiRouter); // 🤖 Enable AI Features
 app.use("/", notificationRouter);
 app.use("/", analyticsRouter);
+app.use("/project", projectRouter); // 💻 Project Portfolio
 
 // ✅ Create server and connect DB
 const server = http.createServer(app);

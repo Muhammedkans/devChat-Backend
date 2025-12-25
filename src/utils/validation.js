@@ -1,30 +1,30 @@
 const validator = require("validator");
-const validationSignUp = (req) =>{
+const validationSignUp = (req) => {
 
-  const {firstName, lastName, emailId, password,} = req.body;
+  const { firstName, lastName, emailId, password, } = req.body;
 
-  if(!firstName || !lastName){
+  if (!firstName || !lastName) {
     throw new Error("please enter valid name");
   }
-  else if(!validator.isEmail(emailId)){
+  else if (!validator.isEmail(emailId)) {
     throw new Error(" invalid credention");
   }
-  else if(!validator.isStrongPassword(password)){
+  else if (!validator.isStrongPassword(password)) {
     throw new Error("please enter valid password");
   }
 }
 
 
-const validateEditProfile = (req) =>{
+const validateEditProfile = (req) => {
 
-  const ALLOWED_UPDATE =  ["firstName", "lastName", "skills", "gender", "age", "about"];
+  const ALLOWED_UPDATE = ["firstName", "lastName", "skills", "gender", "age", "about", "careerStatus"];
 
   const isEditAllowed = Object.keys(req.body).every(key => ALLOWED_UPDATE.includes(key))
 
   return isEditAllowed;
 }
 
-module.exports={
+module.exports = {
   validationSignUp,
   validateEditProfile,
 }

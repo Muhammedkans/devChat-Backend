@@ -30,7 +30,18 @@ const createComment = async (req, res) => {
     const commentCount = await Comment.countDocuments({ post: postId });
 
     // ✅ Update post comment count
-    await Post.findByIdAndUpdate(postId, { commentCount });
+    const postDoc = await Post.findByIdAndUpdate(postId, { commentCount }, { new: true });
+
+    // 🔔 Create Notification (If not commenting on own post)
+    if (postDoc && String(postDoc.user) !== String(userId)) {
+      const Notification = require("../models/Notification");
+      await Notification.create({
+        recipient: postDoc.user,
+        sender: userId,
+        type: "comment",
+        post: postId,
+      });
+    }
 
     // ✅ Emit real-time events to all clients
     const io = getIO();

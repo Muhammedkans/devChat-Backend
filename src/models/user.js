@@ -91,6 +91,13 @@ const userSchema = new mongoose.Schema({
     type: [String],
   },
 
+  // 💼 Career Status
+  careerStatus: {
+    type: String,
+    enum: ["Open to Work", "Hiring", "Mentoring", "Just Exploring"],
+    default: "Just Exploring"
+  },
+
   // 🔖 Saved Posts (Bookmarks)
   savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
 }, {
