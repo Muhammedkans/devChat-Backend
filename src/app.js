@@ -27,6 +27,7 @@ const aiRouter = require("./routes/aiRoute"); // 🤖 AI Route
 const notificationRouter = require("./routes/notification"); // 🔔 Notifications
 const analyticsRouter = require("./routes/analytics"); // 📈 Analytics
 const projectRouter = require("./routes/project"); // 💻 Projects
+const storyRouter = require("./routes/story"); // 🎥 Stories
 
 // ✅ Middlewares
 app.use(express.json());
@@ -59,6 +60,7 @@ app.use("/", aiRouter); // 🤖 Enable AI Features
 app.use("/", notificationRouter);
 app.use("/", analyticsRouter);
 app.use("/project", projectRouter); // 💻 Project Portfolio
+app.use("/story", storyRouter); // 🎥 DevStories
 
 // ✅ Create server and connect DB
 const server = http.createServer(app);
